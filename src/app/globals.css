@@ -1,0 +1,92 @@
+@import "tailwindcss";
+
+@custom-variant dark (&:where(.dark, .dark *));
+
+:root {
+  --background: 250 250 250;
+  --foreground: 17 17 17;
+
+  --card: 255 255 255;
+  --card-hover: 245 245 245;
+  --card-foreground: 17 17 17;
+
+  --muted: 240 240 240;
+  --muted-foreground: 100 100 110;
+
+  --border: 228 228 232;
+  --ring: 100 100 110;
+
+  --primary: 24 24 27;
+  --primary-foreground: 250 250 250;
+
+  --accent: 232 232 238;
+  --accent-foreground: 24 24 27;
+}
+
+.dark {
+  --background: 10 10 12;
+  --foreground: 237 237 240;
+
+  --card: 22 22 26;
+  --card-hover: 28 28 33;
+  --card-foreground: 237 237 240;
+
+  --muted: 32 32 38;
+  --muted-foreground: 161 161 170;
+
+  --border: 38 38 44;
+  --ring: 161 161 170;
+
+  --primary: 250 250 250;
+  --primary-foreground: 10 10 12;
+
+  --accent: 38 38 44;
+  --accent-foreground: 237 237 240;
+}
+
+@theme inline {
+  --color-background: rgb(var(--background));
+  --color-foreground: rgb(var(--foreground));
+
+  --color-card: rgb(var(--card));
+  --color-card-hover: rgb(var(--card-hover));
+  --color-card-foreground: rgb(var(--card-foreground));
+
+  --color-muted: rgb(var(--muted));
+  --color-muted-foreground: rgb(var(--muted-foreground));
+
+  --color-border: rgb(var(--border));
+  --color-ring: rgb(var(--ring));
+
+  --color-primary: rgb(var(--primary));
+  --color-primary-foreground: rgb(var(--primary-foreground));
+
+  --color-accent: rgb(var(--accent));
+  --color-accent-foreground: rgb(var(--accent-foreground));
+
+  --font-sans: var(--font-geist-sans);
+  --font-mono: var(--font-geist-mono);
+}
+
+html,
+body {
+  background: rgb(var(--background));
+  color: rgb(var(--foreground));
+}
+
+body {
+  font-family: var(--font-sans), -apple-system, BlinkMacSystemFont, "Segoe UI",
+    Roboto, "Helvetica Neue", Arial, sans-serif;
+}
+
+/* Shiki: 同時支援 light/dark code theme */
+.shiki,
+.shiki span {
+  color: var(--shiki-light);
+  background-color: var(--shiki-light-bg);
+}
+.dark .shiki,
+.dark .shiki span {
+  color: var(--shiki-dark);
+  background-color: var(--shiki-dark-bg);
+}
