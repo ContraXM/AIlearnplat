@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import { ThemeProvider, ThemeNoFlashScript } from "@/components/theme-provider";
+import { SyncBootstrap } from "@/components/sync-bootstrap";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -42,7 +43,10 @@ export default function RootLayout({
         <ThemeNoFlashScript />
       </head>
       <body className="min-h-full flex flex-col bg-background text-foreground">
-        <ThemeProvider>{children}</ThemeProvider>
+        <ThemeProvider>
+          <SyncBootstrap />
+          {children}
+        </ThemeProvider>
       </body>
     </html>
   );
