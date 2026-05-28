@@ -82,3 +82,28 @@ drop policy if exists "progress_delete_own" on public.progress;
 create policy "progress_delete_own"
   on public.progress for delete
   using (auth.uid() = user_id);
+
+-- ============================================================
+-- Realtime publication
+-- 讓 supabase.channel().on('postgres_changes', ...) 能收到事件。
+-- RLS 仍適用：Realtime broadcast 也會 enforce policy，不會收到別人的 row。
+-- ============================================================
+
+do $$
+begin
+  if not exists (
+    select 1 from pg_publication_tables
+    where pubname = 'supabase_realtime'
+      and schemaname = 'public' and tablename = 'favorites'
+  ) then
+    alter publication supabase_realtime add table public.favorites;
+  end if;
+
+  if not exists (
+    select 1 from pg_publication_tables
+    where pubname = 'supabase_realtime'
+      and schemaname = 'public' and tablename = 'progress'
+  ) then
+    alter publication supabase_realtime add table public.progress;
+  end if;
+end $$;

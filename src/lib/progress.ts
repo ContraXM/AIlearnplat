@@ -162,3 +162,79 @@ export async function bootstrapProgress() {
     }
   }
 }
+
+interface ProgressRow {
+  card_id: string;
+  seen_count: number;
+  mastery: number | null;
+  last_seen_at: string;
+}
+
+/**
+ * 訂閱 progress 表的 realtime 變動。
+ * INSERT / UPDATE 都把整列覆蓋進本地 entries；DELETE 移除該 cardId。
+ * 自己 device 的 echo event 因為值相同會變 no-op。
+ */
+export function subscribeProgressRealtime(userId: string): () => void {
+  if (!supabase) return () => {};
+  const client = supabase;
+
+  const applyRow = (row: ProgressRow) => {
+    const state = useProgress.getState();
+    state._setEntries({
+      ...state.entries,
+      [row.card_id]: {
+        cardId: row.card_id,
+        seenCount: row.seen_count,
+        lastSeenAt: row.last_seen_at,
+        mastery: (row.mastery ?? undefined) as 1 | 2 | 3 | undefined,
+      },
+    });
+  };
+
+  const channel = client
+    .channel(`progress:${userId}`)
+    .on(
+      "postgres_changes",
+      {
+        event: "INSERT",
+        schema: "public",
+        table: "progress",
+        filter: `user_id=eq.${userId}`,
+      },
+      (payload) => applyRow(payload.new as ProgressRow),
+    )
+    .on(
+      "postgres_changes",
+      {
+        event: "UPDATE",
+        schema: "public",
+        table: "progress",
+        filter: `user_id=eq.${userId}`,
+      },
+      (payload) => applyRow(payload.new as ProgressRow),
+    )
+    .on(
+      "postgres_changes",
+      {
+        event: "DELETE",
+        schema: "public",
+        table: "progress",
+        filter: `user_id=eq.${userId}`,
+      },
+      (payload) => {
+        const cardId = (payload.old as { card_id: string }).card_id;
+        const state = useProgress.getState();
+        if (state.entries[cardId]) {
+          const next = { ...state.entries };
+          delete next[cardId];
+          state._setEntries(next);
+        }
+      },
+    )
+    .subscribe();
+
+  return () => {
+    void client.removeChannel(channel);
+  };
+}

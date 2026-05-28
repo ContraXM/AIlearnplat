@@ -140,3 +140,53 @@ export async function bootstrapFavorites() {
     }
   }
 }
+
+/**
+ * 訂閱 favorites 表的 realtime 變動，把雲端事件 idempotent merge 到本地。
+ * 自己 device 寫入的 echo event 因為 idempotent 處理會變 no-op，不會閃跳。
+ * 回傳 cleanup function。
+ */
+export function subscribeFavoritesRealtime(userId: string): () => void {
+  if (!supabase) return () => {};
+  const client = supabase;
+
+  const channel = client
+    .channel(`favorites:${userId}`)
+    .on(
+      "postgres_changes",
+      {
+        event: "INSERT",
+        schema: "public",
+        table: "favorites",
+        filter: `user_id=eq.${userId}`,
+      },
+      (payload) => {
+        const cardId = (payload.new as { card_id: string }).card_id;
+        const state = useFavorites.getState();
+        if (!state.ids.includes(cardId)) {
+          state._setIds([...state.ids, cardId]);
+        }
+      },
+    )
+    .on(
+      "postgres_changes",
+      {
+        event: "DELETE",
+        schema: "public",
+        table: "favorites",
+        filter: `user_id=eq.${userId}`,
+      },
+      (payload) => {
+        const cardId = (payload.old as { card_id: string }).card_id;
+        const state = useFavorites.getState();
+        if (state.ids.includes(cardId)) {
+          state._setIds(state.ids.filter((x) => x !== cardId));
+        }
+      },
+    )
+    .subscribe();
+
+  return () => {
+    void client.removeChannel(channel);
+  };
+}
