@@ -41,4 +41,44 @@ create policy "favorites_delete_own"
   on public.favorites for delete
   using (auth.uid() = user_id);
 
--- progress 之後再加：相同 user_id + card_id 主鍵，多一個 mastery / seen_count / last_seen_at 欄位
+-- ============================================================
+-- progress
+-- 學習進度：每張卡片紀錄看過次數 + 熟練度。
+-- 共用 (user_id, card_id) 主鍵；mastery null 表示還沒評估熟練度。
+-- ============================================================
+
+create table if not exists public.progress (
+  user_id      uuid        not null references auth.users(id) on delete cascade,
+  card_id      text        not null,
+  seen_count   integer     not null default 0,
+  mastery      smallint    null check (mastery in (1, 2, 3)),
+  last_seen_at timestamptz not null default now(),
+  updated_at   timestamptz not null default now(),
+  primary key (user_id, card_id)
+);
+
+create index if not exists progress_user_last_seen_idx
+  on public.progress (user_id, last_seen_at desc);
+
+alter table public.progress enable row level security;
+
+drop policy if exists "progress_select_own" on public.progress;
+create policy "progress_select_own"
+  on public.progress for select
+  using (auth.uid() = user_id);
+
+drop policy if exists "progress_insert_own" on public.progress;
+create policy "progress_insert_own"
+  on public.progress for insert
+  with check (auth.uid() = user_id);
+
+drop policy if exists "progress_update_own" on public.progress;
+create policy "progress_update_own"
+  on public.progress for update
+  using (auth.uid() = user_id)
+  with check (auth.uid() = user_id);
+
+drop policy if exists "progress_delete_own" on public.progress;
+create policy "progress_delete_own"
+  on public.progress for delete
+  using (auth.uid() = user_id);
